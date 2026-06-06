@@ -1,4 +1,13 @@
 
+/**
+ * SPDX-License-Identifier: MIT
+ *
+ * @file: log.c
+ *
+ * @brief
+ *    Implementation of the embedded logging facility.
+ */
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>

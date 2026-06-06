@@ -1,74 +1,131 @@
+# embedded-log
 
-# Log Module for Embedded Systems
-[![Run Unity Tests](https://github.com/ACIDBURN2501/embedded-log/actions/workflows/test.yml/badge.svg)](https://github.com/ACIDBURN2501/embedded-log/actions/workflows/test.yml)
+[![CI](https://github.com/aajll/embedded-log/actions/workflows/ci.yml/badge.svg)](https://github.com/aajll/embedded-log/actions/workflows/ci.yml)
 
-This module provides lightweight, robust logging suitable for embedded systems
-without traditional stdout, UART, or file-based logging interfaces.
-Log entries are stored in a static RAM-based circular buffer and can be inspected
-live via JTAG or during post-mortem debugging.
-
-The log API is minimal and suitable for safety-critical or resource-constrained
-microcontrollers, with no dynamic memory or OS dependencies.
-
----
+A lightweight, MISRA C-compliant RAM log buffer for embedded systems without
+traditional stdout, UART, or file-based logging interfaces. Log entries are
+stored in a caller-owned static ring buffer and can be inspected live via JTAG
+or during post-mortem debugging — with no dynamic memory or OS dependencies.
 
 ## Features
 
-- RAM-based ring buffer for logging
-- Supports log levels: `INFO`, `WARN`, `FAULT`
-- Simple, `printf`-style log API: `log_event(level, fmt, ...)`
-- `LOG_ONCE` macro to prevent log spam in state machines or tight loops
-- Fully defensive: safe against NULL pointers and misuse
-- Doxygen-annotated and MISRA C / Linux Kernel style compliant
-- Easily integrated as a Meson subproject
-- Unit-tested via Unity
-- All log messages accessible for inspection with a debugger
+- **RAM ring buffer** — fixed-size static storage in a caller-owned
+  `struct log_ctx`; no `malloc` / `free`.
+- **Log levels** — `INFO`, `WARN`, `FAULT`.
+- **`printf`-style API** — `log_event(ctx, level, fmt, ...)`.
+- **`LOG_ONCE`** — record a message at most once per code location per reset,
+  preventing log spam in state machines and tight loops.
+- **Defensive** — safe against NULL pointers and misuse.
+- **MISRA C / Linux kernel style** — Doxygen-annotated, suitable for
+  resource-constrained microcontrollers.
+- **Meson subproject ready** — integrates as a wrap dependency.
 
----
+## Installation
 
-## Integration
+### Copy-in (recommended for embedded targets)
+
+Copy two files into your project tree — no build system required:
+
+```
+include/log.h
+src/log.c
+```
+
+Place them in the same directory, then include the header:
+
 ```c
 #include "log.h"
 ```
 
-## Example Usage
-```c
-// During early init:
-log_init(my_timestamp_function);
+### Meson subproject
+
+Add this repo as a wrap dependency or subproject. The library exposes an
+`embedded_log_dep` dependency object that carries the correct include path:
+
+```meson
+embedded_log_dep = dependency('embedded-log', fallback : ['embedded-log', 'embedded_log_dep'])
 ```
 
-You must provide a monotonic timestamp function; the unit (e.g., milliseconds,
-ticks) is user-defined.
+## Quick Start
 
 ```c
-void foo(void) {
-    log_event(INFO, "Entering foo()");
-    if (error) {
-        log_event(FAULT, "Error: %d", error);
-    }
-    LOG_ONCE(WARN, "This warning will only appear once per boot.");
+#include <stdio.h>
+#include "log.h"
+
+static struct log_ctx app_log;
+
+/* You must supply a monotonic timestamp source. The unit (milliseconds,
+ * ticks, ...) is user-defined. */
+static uint32_t my_get_ticks(void)
+{
+        return 0U; /* replace with your tick / RTC source */
+}
+
+void app_init(void)
+{
+        log_init(&app_log, my_get_ticks);
+}
+
+void foo(int error)
+{
+        log_event(&app_log, INFO, "Entering foo()");
+        if (error != 0) {
+                log_event(&app_log, FAULT, "Error: %d", error);
+        }
+        LOG_ONCE(&app_log, WARN, "This warning is recorded once per reset.");
+}
+
+void dump_log(void)
+{
+        for (uint16_t i = 0U; i < log_get_count(&app_log); ++i) {
+                const struct log_entry *e = log_get_entry(&app_log, i);
+                printf("[%u] %u: %s\n",
+                       (unsigned)e->timestamp, (unsigned)e->level, e->msg);
+        }
 }
 ```
 
-## Building the Project with Meson
-This project uses Meson for building and dependency management.
+## Configuration
 
-```c
-meson setup builddir
-meson compile -C builddir
+The buffer geometry is set by macros in `log.h`. Override them before including
+the header or pass them as `-D` flags on the compiler command line.
+
+| Macro | Description | Default |
+|---|---|---|
+| `LOG_ENTRIES` | Number of entries retained in the ring buffer. | `50U` |
+| `LOG_MSG_LEN` | Maximum formatted message length, including the NUL terminator. | `48U` |
+
+## Building
+
+```sh
+# Library only (release)
+meson setup build --buildtype=release
+meson compile -C build
+
+# With unit tests
+meson setup build --buildtype=debug -Dbuild_tests=true
+meson compile -C build
+meson test -C build
 ```
 
-You can include the options `--buildtype=debug` or `--buildtype=release` as
-required.
+Pass `-Dbuild_tests=false` at setup time to skip the Unity-based unit tests.
 
+## API Reference
 
-## Running Unit Tests with Meson
-Unit tests use Unity (included as a subproject):
+| Function | Description |
+|---|---|
+| `log_init(ctx, timestamp_fn)` | Initialise a context with a user-supplied monotonic timestamp function. |
+| `log_event(ctx, level, fmt, ...)` | Record a `printf`-style formatted entry at the given level. |
+| `LOG_ONCE(ctx, level, fmt, ...)` | Record an entry at most once per code location per reset. |
+| `log_get_count(ctx)` | Return the number of valid entries currently stored. |
+| `log_get_entry(ctx, idx)` | Return the `idx`-th oldest entry (`0` = oldest), or `NULL` if out of bounds. |
+| `log_get_buffer(ctx, count)` | Return a pointer to the underlying entry array for direct inspection. |
 
-```c
-meson test -C builddir --print-errorlogs
-```
+## Notes
 
-The option `--Dbuild_tests=false` can be included when setting up the build to
-prevent the building of unit tests.
-
+| Topic | Note |
+|---|---|
+| **Memory** | All storage lives in the caller-owned `struct log_ctx`. Verify `LOG_ENTRIES` × `LOG_MSG_LEN` fits your RAM budget. |
+| **Timestamp source** | `log_init` requires a monotonic timestamp function; the unit is user-defined. |
+| **Thread safety** | Not internally synchronised. Protect a shared context with an external mutex or confine it to a single execution context. |
+| **NULL safety** | Public functions are defensive against NULL pointers and return without effect rather than faulting. |

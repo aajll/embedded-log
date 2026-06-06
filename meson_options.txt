@@ -1,3 +1,2 @@
-# By default we enable tests. These can be disabled by passing
-# -Db_tests=false to meson.
-option('build_tests', type: 'boolean', value: true, description: 'Build unit tests')
+# By default tests are disabled. Enable them with -Dbuild_tests=true.
+option('build_tests', type: 'boolean', value: false, description: 'Build unit tests')
