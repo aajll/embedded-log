@@ -69,7 +69,7 @@ These guidelines are enforced by the `.clang-format` file and by the project’s
 - **Binary operators** break before the operator (`BreakBeforeBinaryOperators: NonAssignment`).
 - **String literals** may be broken (`BreakStringLiterals: true`).
 
-## 2. Header Organization
+## 2. Header Organisation
 - Guard macros use the full filename in uppercase with `_H` suffix (e.g. `LOG_H`).
 - All public symbols are declared in `include/`.  Private helpers stay in `src/`.
 - Group related declarations (enums, structs, prototypes) together and precede them with a Doxygen block comment.

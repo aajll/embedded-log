@@ -1,7 +1,10 @@
-/*
- * @licence MIT
+/**
+ * SPDX-License-Identifier: MIT
  *
  * @file: log.h
+ *
+ * @brief
+ *    Lightweight, MISRA C-compliant RAM log buffer for embedded systems.
  */
 
 #ifndef LOG_H
