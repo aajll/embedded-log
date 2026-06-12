@@ -2,10 +2,7 @@
 
 [![CI](https://github.com/aajll/embedded-log/actions/workflows/ci.yml/badge.svg)](https://github.com/aajll/embedded-log/actions/workflows/ci.yml)
 
-A lightweight, MISRA C:2023 aware RAM log buffer for embedded systems without
-traditional stdout, UART, or file-based logging interfaces. Log entries are
-stored in a caller-owned static ring buffer and can be inspected live via JTAG
-or during post-mortem debugging — with no dynamic memory or OS dependencies.
+A lightweight, MISRA C:2023 aware RAM log buffer for embedded systems without traditional stdout, UART, or file-based logging interfaces. Log entries are stored in a caller-owned static ring buffer and can be inspected live via JTAG or during post-mortem debugging with no dynamic memory or OS dependencies.
 
 ## Features
 
@@ -24,7 +21,7 @@ or during post-mortem debugging — with no dynamic memory or OS dependencies.
 
 ### Copy-in (recommended for embedded targets)
 
-Copy the following files into your project tree — no build system required:
+Copy the following files into your project tree; no build system required:
 
 ```
 include/log.h
@@ -40,8 +37,7 @@ Place them in your include path, then include the header:
 
 ### Meson subproject
 
-Add this repo as a wrap dependency or subproject. The library exposes an
-`embedded_log_dep` dependency object that carries the correct include path:
+Add this repo as a wrap dependency or subproject. The library exposes an `embedded_log_dep` dependency object that carries the correct include path:
 
 ```meson
 embedded_log_dep = dependency('embedded-log', fallback : ['embedded-log', 'embedded_log_dep'])
@@ -88,9 +84,7 @@ void dump_log(void)
 
 ## Configuration
 
-The buffer geometry is set by macros in `log_conf.h` (included automatically
-by `log.h`). Override them before including the header or pass them as `-D`
-flags on the compiler command line.
+The buffer geometry is set by macros in `log_conf.h` (included automatically by `log.h`). Override them before including the header or pass them as `-D` flags on the compiler command line.
 
 | Macro         | Description                                                     | Default |
 | ------------- | --------------------------------------------------------------- | ------- |
@@ -110,31 +104,54 @@ meson compile -C build
 meson test -C build
 ```
 
-The unit tests use a small in-tree harness (`tests/test_harness.h`) — there
-are no external test dependencies. Tests are disabled by default; enable
-them with `-Dbuild_tests=true` at setup time.
+Tests are disabled by default; enable them with `-Dbuild_tests=true` at setup time.
 
 ## API Reference
 
-| Function                          | Description                                                                  |
-| --------------------------------- | ---------------------------------------------------------------------------- |
-| `log_init(ctx, timestamp_fn)`     | Initialise a context with a user-supplied monotonic timestamp function.      |
-| `log_event(ctx, level, fmt, ...)` | Record a `printf`-style formatted entry at the given level.                  |
-| `LOG_ONCE(ctx, level, fmt, ...)`  | Record an entry at most once per code location per reset.                    |
-| `log_get_count(ctx)`              | Return the number of valid entries currently stored.                         |
-| `log_get_entry(ctx, idx)`         | Return the `idx`-th oldest entry (`0` = oldest), or `NULL` if out of bounds. |
-| `log_get_buffer(ctx, count)`      | Return a pointer to the underlying entry array for direct inspection.        |
+### Core Functions
 
-`log_get_buffer` exposes the array in physical (storage) order: once the
-ring has wrapped, this is not chronological order. Use `log_get_entry` for
-oldest-first access.
+```c
+void log_init(struct log_ctx *ctx, uint32_t (*timestamp_fn)(void));
+void log_event(struct log_ctx *ctx, enum log_level level, const char *fmt, ...);
+```
+
+`log_init` initialises a caller-owned context with a user-supplied monotonic timestamp function. `log_event` records a `printf`-style formatted entry at the given level (`LOG_INFO`, `LOG_WARN`, or `LOG_FAULT`); the message is truncated to `LOG_MSG_LEN - 1` characters and is always NUL-terminated.
+
+### One-Shot Logging
+
+```c
+LOG_ONCE(ctx, level, ...);
+```
+
+Records an entry at most once per code location per reset. The guard flag lives in function-local static storage at the expansion site, so each call site is tracked independently.
+
+### Inspection Functions
+
+```c
+uint16_t log_get_count(const struct log_ctx *ctx);
+const struct log_entry *log_get_entry(const struct log_ctx *ctx, uint16_t idx);
+const struct log_entry *log_get_buffer(const struct log_ctx *ctx,
+                                       uint16_t *count);
+```
+
+`log_get_count` returns the number of valid entries currently stored. `log_get_entry` returns the `idx`-th oldest entry (`0` = oldest), or `NULL` if out of bounds. `log_get_buffer` returns a pointer to the underlying entry array for direct inspection and, if `count` is non-NULL, writes the number of valid entries; the array is in physical (storage) order, which differs from chronological order once the ring has wrapped. Use `log_get_entry` for oldest-first access.
+
+### Log Entry
+
+```c
+struct log_entry {
+        uint32_t timestamp;
+        uint16_t level;
+        char msg[LOG_MSG_LEN];
+};
+```
 
 ## Notes
 
-| Topic                | Note                                                                                                                      |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Memory**           | All storage lives in the caller-owned `struct log_ctx`. Verify `LOG_ENTRIES` × `LOG_MSG_LEN` fits your RAM budget.        |
-| **Timestamp source** | `log_init` requires a monotonic timestamp function; the unit is user-defined.                                             |
-| **Thread safety**    | Not internally synchronised. Protect a shared context with an external mutex or confine it to a single execution context. |
-| **NULL safety**      | Public functions are defensive against NULL pointers and return without effect rather than faulting.                     |
-| **MISRA C:2023**     | Aware, not formally compliant. Accepted deviations: Rule 17.1 (`stdarg.h`) and Rule 21.6 (`stdio.h`), required by the `printf`-style `log_event` API. `vsnprintf` is bounded and output is always NUL-terminated.                      |
+| Topic                | Note                                                                                                                                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Memory**           | All storage lives in the caller-owned `struct log_ctx`. Verify `LOG_ENTRIES` × `LOG_MSG_LEN` fits your RAM budget.                                                                                                |
+| **Timestamp source** | `log_init` requires a monotonic timestamp function; the unit is user-defined.                                                                                                                                     |
+| **Thread safety**    | Not internally synchronised. Protect a shared context with an external mutex or confine it to a single execution context.                                                                                         |
+| **NULL safety**      | Public functions are defensive against NULL pointers and return without effect rather than faulting.                                                                                                              |
+| **MISRA C:2023**     | Aware, not formally compliant. Accepted deviations: Rule 17.1 (`stdarg.h`) and Rule 21.6 (`stdio.h`), required by the `printf`-style `log_event` API. `vsnprintf` is bounded and output is always NUL-terminated. |
