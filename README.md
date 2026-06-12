@@ -11,13 +11,13 @@ or during post-mortem debugging — with no dynamic memory or OS dependencies.
 
 - **RAM ring buffer** — fixed-size static storage in a caller-owned
   `struct log_ctx`; no `malloc` / `free`.
-- **Log levels** — `INFO`, `WARN`, `FAULT`.
+- **Log levels** — `LOG_INFO`, `LOG_WARN`, `LOG_FAULT`.
 - **`printf`-style API** — `log_event(ctx, level, fmt, ...)`.
 - **`LOG_ONCE`** — record a message at most once per code location per reset,
   preventing log spam in state machines and tight loops.
 - **Defensive** — safe against NULL pointers and misuse.
-- **MISRA C / Linux kernel style** — Doxygen-annotated, suitable for
-  resource-constrained microcontrollers.
+- **MISRA C:2023 aware, Linux kernel style** — Doxygen-annotated, suitable
+  for resource-constrained microcontrollers.
 - **Meson subproject ready** — integrates as a wrap dependency.
 
 ## Installation
@@ -69,11 +69,11 @@ void app_init(void)
 
 void foo(int error)
 {
-        log_event(&app_log, INFO, "Entering foo()");
+        log_event(&app_log, LOG_INFO, "Entering foo()");
         if (error != 0) {
-                log_event(&app_log, FAULT, "Error: %d", error);
+                log_event(&app_log, LOG_FAULT, "Error: %d", error);
         }
-        LOG_ONCE(&app_log, WARN, "This warning is recorded once per reset.");
+        LOG_ONCE(&app_log, LOG_WARN, "This warning is recorded once per reset.");
 }
 
 void dump_log(void)
@@ -94,8 +94,8 @@ flags on the compiler command line.
 
 | Macro         | Description                                                     | Default |
 | ------------- | --------------------------------------------------------------- | ------- |
-| `LOG_ENTRIES` | Number of entries retained in the ring buffer.                  | `50U`   |
-| `LOG_MSG_LEN` | Maximum formatted message length, including the NUL terminator. | `48U`   |
+| `LOG_ENTRIES` | Number of entries retained in the ring buffer.                  | `64U`   |
+| `LOG_MSG_LEN` | Maximum formatted message length, including the NUL terminator. | `64U`   |
 
 ## Building
 
@@ -110,7 +110,9 @@ meson compile -C build
 meson test -C build
 ```
 
-Pass `-Dbuild_tests=false` at setup time to skip the Unity-based unit tests.
+The unit tests use a small in-tree harness (`tests/test_harness.h`) — there
+are no external test dependencies. Tests are disabled by default; enable
+them with `-Dbuild_tests=true` at setup time.
 
 ## API Reference
 
@@ -123,6 +125,10 @@ Pass `-Dbuild_tests=false` at setup time to skip the Unity-based unit tests.
 | `log_get_entry(ctx, idx)`         | Return the `idx`-th oldest entry (`0` = oldest), or `NULL` if out of bounds. |
 | `log_get_buffer(ctx, count)`      | Return a pointer to the underlying entry array for direct inspection.        |
 
+`log_get_buffer` exposes the array in physical (storage) order: once the
+ring has wrapped, this is not chronological order. Use `log_get_entry` for
+oldest-first access.
+
 ## Notes
 
 | Topic                | Note                                                                                                                      |
@@ -130,4 +136,5 @@ Pass `-Dbuild_tests=false` at setup time to skip the Unity-based unit tests.
 | **Memory**           | All storage lives in the caller-owned `struct log_ctx`. Verify `LOG_ENTRIES` × `LOG_MSG_LEN` fits your RAM budget.        |
 | **Timestamp source** | `log_init` requires a monotonic timestamp function; the unit is user-defined.                                             |
 | **Thread safety**    | Not internally synchronised. Protect a shared context with an external mutex or confine it to a single execution context. |
-| **NULL safety**      | Public functions are defensive against NULL pointers and return without effect rather than faulting.                      |
+| **NULL safety**      | Public functions are defensive against NULL pointers and return without effect rather than faulting.                     |
+| **MISRA C:2023**     | Aware, not formally compliant. Accepted deviations: Rule 17.1 (`stdarg.h`) and Rule 21.6 (`stdio.h`), required by the `printf`-style `log_event` API. `vsnprintf` is bounded and output is always NUL-terminated.                      |

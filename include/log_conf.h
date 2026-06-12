@@ -26,7 +26,7 @@
 /**
  * @brief Number of entries retained in the ring buffer.
  *
- * Default: 50 entries.
+ * Default: 64 entries.
  */
 #define LOG_ENTRIES (64u)
 #endif

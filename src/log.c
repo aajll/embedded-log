@@ -1,4 +1,3 @@
-
 /**
  * SPDX-License-Identifier: MIT
  *
@@ -6,13 +5,18 @@
  *
  * @brief
  *    Implementation of the embedded logging facility.
+ *
+ *    MISRA C:2023 deviations, accepted by design:
+ *    - Rule 17.1 (stdarg.h) and Rule 21.6 (stdio.h): the printf-style
+ *      log_event API requires va_list and vsnprintf. vsnprintf is
+ *      bounded and the result is always NUL-terminated.
  */
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "../include/log.h"
+#include "log.h"
 
 void
 log_init(struct log_ctx *ctx, uint32_t (*timestamp_fn)(void))
@@ -23,7 +27,7 @@ log_init(struct log_ctx *ctx, uint32_t (*timestamp_fn)(void))
         ctx->head = 0u;
         ctx->count = 0u;
         ctx->timestamp_fn = timestamp_fn;
-        (void)memset((void *)ctx->buffer, 0, sizeof(ctx->buffer));
+        (void)memset(ctx->buffer, 0, sizeof(ctx->buffer));
 }
 
 void
@@ -39,8 +43,14 @@ log_event(struct log_ctx *ctx, enum log_level level, const char *fmt, ...)
 
         va_list args;
         va_start(args, fmt);
-        (void)vsnprintf(entry->msg, (size_t)LOG_MSG_LEN, fmt, args);
+        int written = vsnprintf(entry->msg, (size_t)LOG_MSG_LEN, fmt, args);
         va_end(args);
+
+        if (written < 0) {
+                /* Encoding error: store an empty, terminated message
+                 * rather than indeterminate buffer contents. */
+                entry->msg[0] = '\0';
+        }
 
         ctx->head++;
         if (ctx->head >= LOG_ENTRIES) {
@@ -66,9 +76,9 @@ log_get_entry(const struct log_ctx *ctx, uint16_t idx)
         if ((ctx == NULL) || (idx >= ctx->count)) {
                 return NULL;
         }
-        uint16_t phys_idx =
-            (uint16_t)((ctx->head + LOG_ENTRIES - ctx->count + idx)
-                       % LOG_ENTRIES);
+        uint32_t phys_idx = ((uint32_t)ctx->head + (uint32_t)LOG_ENTRIES
+                             - (uint32_t)ctx->count + (uint32_t)idx)
+                            % (uint32_t)LOG_ENTRIES;
         return &ctx->buffer[phys_idx];
 }
 

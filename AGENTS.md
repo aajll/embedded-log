@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Overview
-This repository provides a lightweight logging library for embedded systems.  The code is built with **Meson**, unit‑tested with **Unity**, and formatted using **clang‑format**.  The following document collects the commands agents need to build, lint, and test the project, as well as the coding conventions used throughout the codebase.
+This repository provides a lightweight logging library for embedded systems.  The code is built with **Meson**, unit‑tested with a **small in‑tree harness** (`tests/test_harness.h`), and formatted using **clang‑format**.  There are no external test dependencies.  The following document collects the commands agents need to build, lint, and test the project, as well as the coding conventions used throughout the codebase.
 
 ---
 
@@ -9,8 +9,8 @@ This repository provides a lightweight logging library for embedded systems.  Th
 
 ## 1. Building the project
 ```bash
-# Create a build directory (once)
-meson setup builddir
+# Create a build directory (once); tests are off by default
+meson setup builddir -Dbuild_tests=true
 # Build the library and test executable
 meson compile -C builddir
 ```
@@ -20,27 +20,20 @@ meson compile -C builddir
 ```bash
 meson test -C builddir --print-errorlogs
 ```
-This runs **all** test executables defined in `test/meson.build` (currently `test_log`).
+This runs **all** test executables defined in `tests/meson.build` (currently `test_log`).
 
 ## 3. Running a single test executable
 ```bash
 # Run the test binary directly (fastest)
-./builddir/test/test_log
+./builddir/tests/test_log
 ```
 or via Meson (useful for Meson’s test‑filtering features)
 ```bash
-meson test -C builddir test_log
+meson test -C builddir embedded_log_tests
 ```
-Both commands execute the Unity test runner contained in `test_log.c` which runs every `RUN_TEST` entry.
+Both commands execute the in‑tree test runner contained in `test_log.c`, which runs every `run_test` entry registered in `main()`.
 
-## 4. Running a single Unity test case
-Unity supports the `-t` (test name) flag.  Use the binary directly:
-```bash
-./builddir/test/test_log -t test_log_init_and_event
-```
-Replace the name after `-t` with any function that begins with `test_`.
-
-## 5. Linting / Formatting
+## 4. Linting / Formatting
 The project adheres to the `.clang-format` file located at the repository root.
 ```bash
 # Check formatting (dry‑run)
@@ -50,7 +43,7 @@ clang-format -i -style=file $(git ls-files "*.[ch]")
 ```
 Optionally run `cppcheck` for static analysis:
 ```bash
-cppcheck --enable=warning,style,performance,portability src/include test src
+cppcheck --enable=warning,style,performance,portability include tests src
 ```
 
 ---
@@ -79,10 +72,10 @@ These guidelines are enforced by the `.clang-format` file and by the project’s
 | Element | Convention | Example |
 |---------|------------|---------|
 | **Macros / constants** | `UPPER_SNAKE_CASE` | `LOG_MSG_LEN`, `LOG_ENTRIES` |
-| **Enum values** | Uppercase, prefixed with enum name if ambiguous | `INFO`, `WARN`, `FAULT` |
+| **Enum values** | `UPPER_SNAKE_CASE`, always prefixed with the module name | `LOG_INFO`, `LOG_WARN`, `LOG_FAULT` |
 | **Struct types** | `struct_name_t` or plain `struct name` | `struct log_entry` |
 | **Functions** | `snake_case` (lowercase, underscores) | `log_init`, `log_event` |
-| **Static/file‑local variables** | `lower_snake_case` (no leading underscore) | `static uint8_t _logged` is *exception* – static locals that act as flags may start with underscore.
+| **Static/file‑local variables** | `lower_snake_case` (no leading underscore) | `static uint8_t log_once_done` |
 | **Parameters** | `lower_snake_case` | `struct log_ctx *ctx` |
 | **Typedefs** | `PascalCase` ending with `_t` if appropriate | `typedef uint32_t timestamp_t;` |
 
@@ -113,18 +106,15 @@ These guidelines are enforced by the `.clang-format` file and by the project’s
 - Use `@param` and `@return` tags for functions.
 - Group related items with `@defgroup` and `@{ … @}` as shown in `log.h`.
 
-## 8. Testing Conventions (Unity)
-- Test files live in `test/`.  Each test file includes `unity.h` *before* the library header.
-- Every test function is named `test_<feature>`.  The `main()` function calls `UNITY_BEGIN()`, `RUN_TEST(...)` for each test, and `UNITY_END()`.
-- To add a new test:
-  1. Write a `static void test_<name>(void)` function.
-  2. Add a `RUN_TEST(test_<name>);` line before `return UNITY_END();`.
-  3. Increment the Meson test count if a new executable is added (not required for a new function inside an existing test file).
-- Use `TEST_ASSERT_*` macros for validation.  Prefer the most specific macro (`*_UINT16`, `*_STRING`, etc.).
+## 8. Testing Conventions (in‑tree harness)
+- Test files live in `tests/`.  Each test file includes `test_harness.h` *before* the library header.
+- Test cases are defined with `TEST_CASE(test_<feature>)` and registered in `main()` with `run_test(test_<feature>, "test_<feature>");`.
+- Use the `TEST_ASSERT(expr)` macro for validation; a failed assertion prints the file, line, and expression, then exits non‑zero.
+- Tests must compile as strict ISO C11 — no GNU extensions (nested functions, `##__VA_ARGS__`, etc.).  CI builds them with both GCC and clang.
 
 ## 9. Meson Build Guidelines
 - The top‑level `meson.build` defines the static library `log` and declares a dependency `embedded_log_dep`.
-- Unit tests are enabled with the option `build_tests` (default `true`).  The `test/meson.build` file adds the Unity subproject and creates an executable `test_log` linked against `embedded_log_dep`.
+- Unit tests are enabled with the option `build_tests` (default `false`).  The `tests/meson.build` file creates an executable `test_log` from `test_log.c` and `test_harness.c`, linked against `embedded_log_dep`.
 - When adding new source files, update the `sources:` array in the `static_library` declaration.
 - When adding new include directories, modify the `include_directories()` call.
 
