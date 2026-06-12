@@ -1,8 +1,8 @@
 # Contributing to embedded-log
 
-embedded-log is a small C library providing a lightweight, MISRA C-compliant
-RAM log buffer for embedded systems. It is designed to be safe to drop into
-embedded firmware and audited environments.
+embedded-log is a small C library providing a lightweight, MISRA C:2023
+aware RAM log buffer for embedded systems. It is designed to be safe to
+drop into embedded firmware and audited environments.
 
 ## Getting started
 
@@ -44,7 +44,10 @@ gcovr --root . --filter 'src/' --filter 'include/' --print-summary
 - Add a test for every bug fix.
 - Add a test for every new feature.
 - CI enforces an 80% line / 70% branch coverage gate.
-- Tests live in `tests/test_*.c`.
+- Tests live in `tests/test_*.c` and use the in-tree harness
+  (`tests/test_harness.h`); there are no external test dependencies.
+- Tests must compile as strict ISO C11 (no GNU extensions) — CI builds
+  them with both GCC and clang.
 
 ## Commits
 

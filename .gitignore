@@ -45,6 +45,3 @@
 
 # Meson build output
 build/
-
-# Unity test framework
-subprojects/unity/

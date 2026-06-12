@@ -1,7 +1,7 @@
 project(
   'embedded-log',
   'c',
-  version: '0.1.0',
+  version: '1.0.0',
   default_options: ['warning_level=3', 'c_std=c11'],
   license: 'MIT',
 )
@@ -32,7 +32,10 @@ configure_file(
 
 public_headers = include_directories('include')
 
-install_headers('include/log.h', subdir: 'embedded-log')
+install_headers(
+  ['include/log.h', 'include/log_conf.h'],
+  subdir: 'embedded-log',
+)
 
 # === Application core library =================================================
 
@@ -57,7 +60,7 @@ pkgconfig = import('pkgconfig')
 pkgconfig.generate(
   embedded_log_lib,
   name: 'embedded-log',
-  description: 'Lightweight, MISRA C-compliant RAM log buffer for embedded systems',
+  description: 'Lightweight, RAM log buffer for embedded systems',
   subdirs: 'embedded-log',
 )
 

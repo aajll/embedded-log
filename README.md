@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/aajll/embedded-log/actions/workflows/ci.yml/badge.svg)](https://github.com/aajll/embedded-log/actions/workflows/ci.yml)
 
-A lightweight, MISRA C-compliant RAM log buffer for embedded systems without
+A lightweight, MISRA C:2023 aware RAM log buffer for embedded systems without
 traditional stdout, UART, or file-based logging interfaces. Log entries are
 stored in a caller-owned static ring buffer and can be inspected live via JTAG
 or during post-mortem debugging — with no dynamic memory or OS dependencies.
@@ -11,27 +11,28 @@ or during post-mortem debugging — with no dynamic memory or OS dependencies.
 
 - **RAM ring buffer** — fixed-size static storage in a caller-owned
   `struct log_ctx`; no `malloc` / `free`.
-- **Log levels** — `INFO`, `WARN`, `FAULT`.
+- **Log levels** — `LOG_INFO`, `LOG_WARN`, `LOG_FAULT`.
 - **`printf`-style API** — `log_event(ctx, level, fmt, ...)`.
 - **`LOG_ONCE`** — record a message at most once per code location per reset,
   preventing log spam in state machines and tight loops.
 - **Defensive** — safe against NULL pointers and misuse.
-- **MISRA C / Linux kernel style** — Doxygen-annotated, suitable for
-  resource-constrained microcontrollers.
+- **MISRA C:2023 aware, Linux kernel style** — Doxygen-annotated, suitable
+  for resource-constrained microcontrollers.
 - **Meson subproject ready** — integrates as a wrap dependency.
 
 ## Installation
 
 ### Copy-in (recommended for embedded targets)
 
-Copy two files into your project tree — no build system required:
+Copy the following files into your project tree — no build system required:
 
 ```
 include/log.h
+include/log_conf.h
 src/log.c
 ```
 
-Place them in the same directory, then include the header:
+Place them in your include path, then include the header:
 
 ```c
 #include "log.h"
@@ -68,11 +69,11 @@ void app_init(void)
 
 void foo(int error)
 {
-        log_event(&app_log, INFO, "Entering foo()");
+        log_event(&app_log, LOG_INFO, "Entering foo()");
         if (error != 0) {
-                log_event(&app_log, FAULT, "Error: %d", error);
+                log_event(&app_log, LOG_FAULT, "Error: %d", error);
         }
-        LOG_ONCE(&app_log, WARN, "This warning is recorded once per reset.");
+        LOG_ONCE(&app_log, LOG_WARN, "This warning is recorded once per reset.");
 }
 
 void dump_log(void)
@@ -87,13 +88,14 @@ void dump_log(void)
 
 ## Configuration
 
-The buffer geometry is set by macros in `log.h`. Override them before including
-the header or pass them as `-D` flags on the compiler command line.
+The buffer geometry is set by macros in `log_conf.h` (included automatically
+by `log.h`). Override them before including the header or pass them as `-D`
+flags on the compiler command line.
 
-| Macro | Description | Default |
-|---|---|---|
-| `LOG_ENTRIES` | Number of entries retained in the ring buffer. | `50U` |
-| `LOG_MSG_LEN` | Maximum formatted message length, including the NUL terminator. | `48U` |
+| Macro         | Description                                                     | Default |
+| ------------- | --------------------------------------------------------------- | ------- |
+| `LOG_ENTRIES` | Number of entries retained in the ring buffer.                  | `64U`   |
+| `LOG_MSG_LEN` | Maximum formatted message length, including the NUL terminator. | `64U`   |
 
 ## Building
 
@@ -108,24 +110,31 @@ meson compile -C build
 meson test -C build
 ```
 
-Pass `-Dbuild_tests=false` at setup time to skip the Unity-based unit tests.
+The unit tests use a small in-tree harness (`tests/test_harness.h`) — there
+are no external test dependencies. Tests are disabled by default; enable
+them with `-Dbuild_tests=true` at setup time.
 
 ## API Reference
 
-| Function | Description |
-|---|---|
-| `log_init(ctx, timestamp_fn)` | Initialise a context with a user-supplied monotonic timestamp function. |
-| `log_event(ctx, level, fmt, ...)` | Record a `printf`-style formatted entry at the given level. |
-| `LOG_ONCE(ctx, level, fmt, ...)` | Record an entry at most once per code location per reset. |
-| `log_get_count(ctx)` | Return the number of valid entries currently stored. |
-| `log_get_entry(ctx, idx)` | Return the `idx`-th oldest entry (`0` = oldest), or `NULL` if out of bounds. |
-| `log_get_buffer(ctx, count)` | Return a pointer to the underlying entry array for direct inspection. |
+| Function                          | Description                                                                  |
+| --------------------------------- | ---------------------------------------------------------------------------- |
+| `log_init(ctx, timestamp_fn)`     | Initialise a context with a user-supplied monotonic timestamp function.      |
+| `log_event(ctx, level, fmt, ...)` | Record a `printf`-style formatted entry at the given level.                  |
+| `LOG_ONCE(ctx, level, fmt, ...)`  | Record an entry at most once per code location per reset.                    |
+| `log_get_count(ctx)`              | Return the number of valid entries currently stored.                         |
+| `log_get_entry(ctx, idx)`         | Return the `idx`-th oldest entry (`0` = oldest), or `NULL` if out of bounds. |
+| `log_get_buffer(ctx, count)`      | Return a pointer to the underlying entry array for direct inspection.        |
+
+`log_get_buffer` exposes the array in physical (storage) order: once the
+ring has wrapped, this is not chronological order. Use `log_get_entry` for
+oldest-first access.
 
 ## Notes
 
-| Topic | Note |
-|---|---|
-| **Memory** | All storage lives in the caller-owned `struct log_ctx`. Verify `LOG_ENTRIES` × `LOG_MSG_LEN` fits your RAM budget. |
-| **Timestamp source** | `log_init` requires a monotonic timestamp function; the unit is user-defined. |
-| **Thread safety** | Not internally synchronised. Protect a shared context with an external mutex or confine it to a single execution context. |
-| **NULL safety** | Public functions are defensive against NULL pointers and return without effect rather than faulting. |
+| Topic                | Note                                                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Memory**           | All storage lives in the caller-owned `struct log_ctx`. Verify `LOG_ENTRIES` × `LOG_MSG_LEN` fits your RAM budget.        |
+| **Timestamp source** | `log_init` requires a monotonic timestamp function; the unit is user-defined.                                             |
+| **Thread safety**    | Not internally synchronised. Protect a shared context with an external mutex or confine it to a single execution context. |
+| **NULL safety**      | Public functions are defensive against NULL pointers and return without effect rather than faulting.                     |
+| **MISRA C:2023**     | Aware, not formally compliant. Accepted deviations: Rule 17.1 (`stdarg.h`) and Rule 21.6 (`stdio.h`), required by the `printf`-style `log_event` API. `vsnprintf` is bounded and output is always NUL-terminated.                      |
