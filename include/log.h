@@ -13,6 +13,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#include "log_conf.h"
+
 /**
  * @defgroup log_api Embedded Logging Facility
  *
@@ -66,9 +68,6 @@
  *
  * @{
  */
-
-#define LOG_MSG_LEN (48u)
-#define LOG_ENTRIES (50u)
 
 /**
  * @brief Log level enum.

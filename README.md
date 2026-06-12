@@ -24,14 +24,15 @@ or during post-mortem debugging — with no dynamic memory or OS dependencies.
 
 ### Copy-in (recommended for embedded targets)
 
-Copy two files into your project tree — no build system required:
+Copy the following files into your project tree — no build system required:
 
 ```
 include/log.h
+include/log_conf.h
 src/log.c
 ```
 
-Place them in the same directory, then include the header:
+Place them in your include path, then include the header:
 
 ```c
 #include "log.h"
@@ -87,8 +88,9 @@ void dump_log(void)
 
 ## Configuration
 
-The buffer geometry is set by macros in `log.h`. Override them before including
-the header or pass them as `-D` flags on the compiler command line.
+The buffer geometry is set by macros in `log_conf.h` (included automatically
+by `log.h`). Override them before including the header or pass them as `-D`
+flags on the compiler command line.
 
 | Macro | Description | Default |
 |---|---|---|
