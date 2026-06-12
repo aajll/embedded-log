@@ -1,2 +1,7 @@
 # By default tests are disabled. Enable them with -Dbuild_tests=true.
-option('build_tests', type: 'boolean', value: false, description: 'Build unit tests')
+option(
+  'build_tests',
+  type: 'boolean',
+  value: false,
+  description: 'Build unit tests',
+)

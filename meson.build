@@ -60,7 +60,7 @@ pkgconfig = import('pkgconfig')
 pkgconfig.generate(
   embedded_log_lib,
   name: 'embedded-log',
-  description: 'Lightweight, MISRA C-compliant RAM log buffer for embedded systems',
+  description: 'Lightweight, RAM log buffer for embedded systems',
   subdirs: 'embedded-log',
 )
 

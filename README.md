@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/aajll/embedded-log/actions/workflows/ci.yml/badge.svg)](https://github.com/aajll/embedded-log/actions/workflows/ci.yml)
 
-A lightweight, MISRA C-compliant RAM log buffer for embedded systems without
+A lightweight, MISRA C:2023 aware RAM log buffer for embedded systems without
 traditional stdout, UART, or file-based logging interfaces. Log entries are
 stored in a caller-owned static ring buffer and can be inspected live via JTAG
 or during post-mortem debugging — with no dynamic memory or OS dependencies.
@@ -92,10 +92,10 @@ The buffer geometry is set by macros in `log_conf.h` (included automatically
 by `log.h`). Override them before including the header or pass them as `-D`
 flags on the compiler command line.
 
-| Macro | Description | Default |
-|---|---|---|
-| `LOG_ENTRIES` | Number of entries retained in the ring buffer. | `50U` |
-| `LOG_MSG_LEN` | Maximum formatted message length, including the NUL terminator. | `48U` |
+| Macro         | Description                                                     | Default |
+| ------------- | --------------------------------------------------------------- | ------- |
+| `LOG_ENTRIES` | Number of entries retained in the ring buffer.                  | `50U`   |
+| `LOG_MSG_LEN` | Maximum formatted message length, including the NUL terminator. | `48U`   |
 
 ## Building
 
@@ -114,20 +114,20 @@ Pass `-Dbuild_tests=false` at setup time to skip the Unity-based unit tests.
 
 ## API Reference
 
-| Function | Description |
-|---|---|
-| `log_init(ctx, timestamp_fn)` | Initialise a context with a user-supplied monotonic timestamp function. |
-| `log_event(ctx, level, fmt, ...)` | Record a `printf`-style formatted entry at the given level. |
-| `LOG_ONCE(ctx, level, fmt, ...)` | Record an entry at most once per code location per reset. |
-| `log_get_count(ctx)` | Return the number of valid entries currently stored. |
-| `log_get_entry(ctx, idx)` | Return the `idx`-th oldest entry (`0` = oldest), or `NULL` if out of bounds. |
-| `log_get_buffer(ctx, count)` | Return a pointer to the underlying entry array for direct inspection. |
+| Function                          | Description                                                                  |
+| --------------------------------- | ---------------------------------------------------------------------------- |
+| `log_init(ctx, timestamp_fn)`     | Initialise a context with a user-supplied monotonic timestamp function.      |
+| `log_event(ctx, level, fmt, ...)` | Record a `printf`-style formatted entry at the given level.                  |
+| `LOG_ONCE(ctx, level, fmt, ...)`  | Record an entry at most once per code location per reset.                    |
+| `log_get_count(ctx)`              | Return the number of valid entries currently stored.                         |
+| `log_get_entry(ctx, idx)`         | Return the `idx`-th oldest entry (`0` = oldest), or `NULL` if out of bounds. |
+| `log_get_buffer(ctx, count)`      | Return a pointer to the underlying entry array for direct inspection.        |
 
 ## Notes
 
-| Topic | Note |
-|---|---|
-| **Memory** | All storage lives in the caller-owned `struct log_ctx`. Verify `LOG_ENTRIES` × `LOG_MSG_LEN` fits your RAM budget. |
-| **Timestamp source** | `log_init` requires a monotonic timestamp function; the unit is user-defined. |
-| **Thread safety** | Not internally synchronised. Protect a shared context with an external mutex or confine it to a single execution context. |
-| **NULL safety** | Public functions are defensive against NULL pointers and return without effect rather than faulting. |
+| Topic                | Note                                                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Memory**           | All storage lives in the caller-owned `struct log_ctx`. Verify `LOG_ENTRIES` × `LOG_MSG_LEN` fits your RAM budget.        |
+| **Timestamp source** | `log_init` requires a monotonic timestamp function; the unit is user-defined.                                             |
+| **Thread safety**    | Not internally synchronised. Protect a shared context with an external mutex or confine it to a single execution context. |
+| **NULL safety**      | Public functions are defensive against NULL pointers and return without effect rather than faulting.                      |
