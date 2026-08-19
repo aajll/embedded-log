@@ -106,6 +106,10 @@ These guidelines are enforced by the `.clang-format` file and by the project’s
 - Use `@param` and `@return` tags for functions.
 - Group related items with `@defgroup` and `@{ … @}` as shown in `log.h`.
 
+## 7.1 Member comment placement (Doxygen)
+
+Inline trailing annotations (`/**< ... */`) on `enum`/`struct` members are allowed only when the resulting line fits the 80-column limit. If any member's annotation would overrun, move **all** of that aggregate's member docs into a single structured Doxygen block above the type, as an `@details` list of `- ::SYMBOL  description` entries. Never mix inline and block forms within one aggregate, and never leave a trailing comment that clang-format would wrap onto a second line. After editing, verify with a `clang-format --style=file` no-reformat diff and an 80-column scan.
+
 ## 8. Testing Conventions (in‑tree harness)
 - Test files live in `tests/`.  Each test file includes `test_harness.h` *before* the library header.
 - Test cases are defined with `TEST_CASE(test_<feature>)` and registered in `main()` with `run_test(test_<feature>, "test_<feature>");`.
