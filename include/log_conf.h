@@ -4,31 +4,32 @@
  * @file: log_conf.h
  *
  * @brief
- *    Configuration macros for the embedded logging facility.
+ *    Deprecated: include @c emlog_conf.h and use the @c EMLOG_ names.
  *
- *    Override any macro before including @c log.h (e.g. via a compiler
- *    @c -D flag or a project-level config header) to change the defaults.
+ *    A @c LOG_MSG_LEN or @c LOG_ENTRIES override applies to the matching
+ *    @c EMLOG_ setting, and both names are defined afterwards. This header
+ *    will be removed in the next major release.
  */
 
 #ifndef LOG_CONF_H
 #define LOG_CONF_H
 
+#if defined(LOG_MSG_LEN) && !defined(EMLOG_MSG_LEN)
+#define EMLOG_MSG_LEN LOG_MSG_LEN
+#endif
+
+#if defined(LOG_ENTRIES) && !defined(EMLOG_ENTRIES)
+#define EMLOG_ENTRIES LOG_ENTRIES
+#endif
+
+#include "emlog_conf.h"
+
 #ifndef LOG_MSG_LEN
-/**
- * @brief Maximum formatted message length, including the NUL terminator.
- *
- * Default: 64 bytes.
- */
-#define LOG_MSG_LEN (64u)
+#define LOG_MSG_LEN EMLOG_MSG_LEN
 #endif
 
 #ifndef LOG_ENTRIES
-/**
- * @brief Number of entries retained in the ring buffer.
- *
- * Default: 64 entries.
- */
-#define LOG_ENTRIES (64u)
+#define LOG_ENTRIES EMLOG_ENTRIES
 #endif
 
 #endif /* LOG_CONF_H */
