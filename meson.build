@@ -20,26 +20,28 @@ conf.set('MAJOR', major)
 conf.set('MINOR', minor)
 conf.set('PATCH', patch)
 
-configure_file(
-  input: 'config' / 'log_version.h.in',
-  output: 'log_version.h',
-  configuration: conf,
-  install: true,
-  install_dir: get_option('includedir') / 'embedded-log',
-)
+subdir('include')
 
 # === Include directories ======================================================
 
 public_headers = include_directories('include')
 
+# emlog_* are the API; log_* are deprecated forwarders kept for existing
+# callers until the next major release.
 install_headers(
-  ['include/log.h', 'include/log_conf.h'],
+  [
+    'include/emlog.h',
+    'include/emlog_conf.h',
+    'include/log.h',
+    'include/log_conf.h',
+    'include/log_version.h',
+  ],
   subdir: 'embedded-log',
 )
 
 # === Application core library =================================================
 
-library_sources = ['src/log.c']
+library_sources = ['src/emlog.c']
 
 embedded_log_lib = static_library(
   'log',

@@ -63,19 +63,19 @@ These guidelines are enforced by the `.clang-format` file and by the project’s
 - **String literals** may be broken (`BreakStringLiterals: true`).
 
 ## 2. Header Organisation
-- Guard macros use the full filename in uppercase with `_H` suffix (e.g. `LOG_H`).
+- Guard macros use the full filename in uppercase with `_H` suffix (e.g. `EMLOG_H`).
 - All public symbols are declared in `include/`.  Private helpers stay in `src/`.
 - Group related declarations (enums, structs, prototypes) together and precede them with a Doxygen block comment.
-- The header ends with a single `#endif /* LOG_H */` line.
+- The header ends with a single `#endif /* EMLOG_H */` line.
 
 ## 3. Naming Conventions
 | Element | Convention | Example |
 |---------|------------|---------|
-| **Macros / constants** | `UPPER_SNAKE_CASE` | `LOG_MSG_LEN`, `LOG_ENTRIES` |
-| **Enum values** | `UPPER_SNAKE_CASE`, always prefixed with the module name | `LOG_INFO`, `LOG_WARN`, `LOG_FAULT` |
-| **Struct types** | `struct_name_t` or plain `struct name` | `struct log_entry` |
-| **Functions** | `snake_case` (lowercase, underscores) | `log_init`, `log_event` |
-| **Static/file‑local variables** | `lower_snake_case` (no leading underscore) | `static uint8_t log_once_done` |
+| **Macros / constants** | `UPPER_SNAKE_CASE` | `EMLOG_MSG_LEN`, `EMLOG_ENTRIES` |
+| **Enum values** | `UPPER_SNAKE_CASE`, always prefixed with the module name | `EMLOG_INFO`, `EMLOG_WARN`, `EMLOG_FAULT` |
+| **Struct types** | `struct_name_t` or plain `struct name` | `struct emlog_entry` |
+| **Functions** | `snake_case` (lowercase, underscores) | `emlog_init`, `emlog_event` |
+| **Static/file‑local variables** | `lower_snake_case` (no leading underscore) | `static uint_least8_t emlog_once_done` |
 | **Parameters** | `lower_snake_case` | `struct log_ctx *ctx` |
 | **Typedefs** | `PascalCase` ending with `_t` if appropriate | `typedef uint32_t timestamp_t;` |
 
@@ -93,10 +93,10 @@ These guidelines are enforced by the `.clang-format` file and by the project’s
     ```
 - `log_event` must ignore a `NULL` format string – the existing implementation does this.
 - All public functions return `void` unless an error code is meaningful.  If an error must be propagated, use an `int` return where `0` = success, non‑zero = error.
-- Use `static` variables for state that must survive across calls (e.g. `LOG_ONCE` flag) and keep them confined to the smallest possible scope.
+- Use `static` variables for state that must survive across calls (e.g. `EMLOG_ONCE` flag) and keep them confined to the smallest possible scope.
 
 ## 6. Macro Guidelines
-- **`LOG_ONCE`** is the only public macro.  It follows the pattern `UPPER_SNAKE_CASE` and expands to a `do { … } while (0)` block.
+- **`EMLOG_ONCE`** is the only public macro.  It follows the pattern `UPPER_SNAKE_CASE` and expands to a `do { … } while (0)` block.
 - Do **not** place side‑effects in macro arguments; always evaluate arguments exactly once.
 - Avoid multi‑statement macros without the `do … while (0)` wrapper.
 
@@ -104,7 +104,7 @@ These guidelines are enforced by the `.clang-format` file and by the project’s
 - All public symbols must have a Doxygen comment block (`/** … */`).
 - Brief description on the first line, detailed description optional.
 - Use `@param` and `@return` tags for functions.
-- Group related items with `@defgroup` and `@{ … @}` as shown in `log.h`.
+- Group related items with `@defgroup` and `@{ … @}` as shown in `emlog.h`.
 
 ## 7.1 Member comment placement (Doxygen)
 
