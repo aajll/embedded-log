@@ -1,12 +1,14 @@
-# test_log.c is written against the deprecated log.h names and checks that
-# existing callers keep working through the forwarding headers.
-test_log = executable(
-  'test_log',
-  ['test_log.c', 'test_harness.c'],
-  dependencies: [embedded_log_dep],
-  include_directories: include_directories('.'),
-)
-test('embedded_log_tests', test_log)
+# One executable per concern. Each links the library and the in-tree
+# harness.
+foreach t : ['init', 'event', 'read', 'legacy']
+  exe = executable(
+    'test_' + t,
+    ['test_' + t + '.c', 'test_harness.c'],
+    dependencies: [embedded_log_dep],
+    include_directories: include_directories('.'),
+  )
+  test(t, exe)
+endforeach
 
 # Header-only: the overridden configuration never reaches the library.
 test_legacy_conf = executable(
