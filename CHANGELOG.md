@@ -15,9 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The build registers `embedded-log` with `meson.override_dependency`, so other subprojects in a consumer's build find it by name.
 - `scripts/format.sh` checks or applies formatting with a pinned clang-format release run through `uvx`, and CI runs the check.
 - CI runs a MISRA C:2023 analysis with `misch` for each atomic backend, against baselines in `analysis/baseline/` that record the existing findings.
+- An `embedded-log docs examples` test compiles every C example in the README, `CONTRIBUTING.md` and `docs/` against the public headers.
 
 ### Changed
 
+- The README is a landing page, with the installation and configuration guide in `docs/integration.md`, the API and recipes in `docs/api.md`, and the ring, interrupt path, backends and verification in `docs/design.md`. `CONTRIBUTING.md` and `AGENTS.md` describe the current tooling and the interrupt path's concurrency rules.
 - CI installs Meson, Ninja and gcovr with `uv` instead of `pip` and `apt`.
 - The Meson files and the test harness carry SPDX licence headers.
 - Tests are split into one executable per concern (initialisation, event recording, ring reads, deprecated names), and CI gates line and branch coverage at 100 %.
