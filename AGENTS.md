@@ -20,7 +20,7 @@ meson compile -C builddir
 ```bash
 meson test -C builddir --print-errorlogs
 ```
-This runs **all** test executables defined in `tests/meson.build`: one per concern (`test_init`, `test_event`, `test_read`, `test_legacy`), plus `test_legacy_conf` and, where `<syslog.h>` exists, `test_syslog`.
+This runs **all** test executables defined in `tests/meson.build`: one per concern (`test_init`, `test_event`, `test_read`, `test_legacy`), `test_isr_gnu`, `test_isr_c11` and `test_isr_no` (the interrupt path built against a library per atomic backend), plus `test_legacy_conf` and, where `<syslog.h>` exists, `test_syslog`.
 
 ## 3. Running a single test executable
 ```bash
@@ -96,7 +96,8 @@ These guidelines are enforced by the `.clang-format` file and by the project’s
 - Use `static` variables for state that must survive across calls (e.g. `EMLOG_ONCE` flag) and keep them confined to the smallest possible scope.
 
 ## 6. Macro Guidelines
-- **`EMLOG_ONCE`** is the only public macro.  It follows the pattern `UPPER_SNAKE_CASE` and expands to a `do { … } while (0)` block.
+- **`EMLOG_ONCE`** is the only function-like macro in the API.  It follows the pattern `UPPER_SNAKE_CASE` and expands to a `do { … } while (0)` block.  Configuration macros live in `emlog_conf.h`; internal helpers use the `EMLOG__` prefix.
+- `emlog_event_isr()` is the only function that may run concurrently with the others, from a single producer.  Its indices go through the `EMLOG__LOAD_*`/`EMLOG__STORE_*` backend macros in `src/emlog.c`; keep release on publish and acquire on observe.
 - Do **not** place side‑effects in macro arguments; always evaluate arguments exactly once.
 - Avoid multi‑statement macros without the `do … while (0)` wrapper.
 
@@ -113,7 +114,7 @@ Inline trailing annotations (`/**< ... */`) on `enum`/`struct` members are allow
 ## 8. Testing Conventions (in‑tree harness)
 - Test files live in `tests/`, one file and executable per concern.  Each test file includes `test_harness.h` *before* the library header.
 - `test_legacy.c` uses only the deprecated `log.h` names; every other test uses `emlog.h`.
-- CI gates line and branch coverage at 100 %.  Every new branch needs a test that fails when the branch is broken.
+- CI gates line and branch coverage at 100 % and runs the suite under ThreadSanitizer.  Every new branch needs a test that fails when the branch is broken.
 - Test cases are defined with `TEST_CASE(test_<feature>)` and registered in `main()` with `run_test(test_<feature>, "test_<feature>");`.
 - Use the `TEST_ASSERT(expr)` macro for validation; a failed assertion prints the file, line, and expression, then exits non‑zero.
 - Tests must compile as strict ISO C11 — no GNU extensions (nested functions, `##__VA_ARGS__`, etc.).  CI builds them with both GCC and clang.

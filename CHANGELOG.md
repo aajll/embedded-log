@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - `emlog.h`, `emlog_conf.h` and a generated `emlog_version.h` provide the API under the `emlog_` and `EMLOG_` prefixes (`struct emlog_ctx`, `emlog_event()`, `EMLOG_INFO`, `EMLOG_ONCE`, `EMLOG_MSG_LEN`), so it can be included alongside `<syslog.h>`.
+- `emlog_event_isr()` records an entry from interrupt context with a lock-free single-producer enqueue, deferring formatting to `emlog_drain()` in the background; `emlog_get_isr_dropped()` counts entries lost to a full pending ring. `EMLOG_ISR_ENTRIES` sizes the pending ring, and `EMLOG_USE_GNU_ATOMICS`, `EMLOG_USE_C11_ATOMICS` or `EMLOG_USE_NO_ATOMICS` override the atomic backend.
+- CI runs the interrupt-path tests under ThreadSanitizer and builds them once per atomic backend.
 - CI cross-builds the library with TI C2000 CGT 22.6.2 and 25.11.1 under the COFF and EABI object formats, with warnings as errors.
 
 ### Changed

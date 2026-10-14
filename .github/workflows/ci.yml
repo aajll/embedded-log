@@ -48,6 +48,41 @@ jobs:
           path: build/meson-logs/testlog.txt
 
   # ---------------------------------------------------------------------------
+  # ThreadSanitizer over the interrupt path: a producer thread posts with
+  # emlog_event_isr() while the main thread drains, under the GNU and C11
+  # atomic backends.
+  # ---------------------------------------------------------------------------
+  tsan:
+    name: "ThreadSanitizer"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Install ninja
+        run: sudo apt-get update -q && sudo apt-get install -y ninja-build
+
+      - name: Install meson
+        run: pip install meson
+
+      - name: Configure (debug + thread sanitizer)
+        run: >
+          meson setup build
+          --buildtype=debug
+          -Dbuild_tests=true
+          -Db_sanitize=thread
+
+      - name: Build
+        run: meson compile -C build
+
+      - name: Test
+        run: meson test -C build --verbose
+
+  # ---------------------------------------------------------------------------
   # Verify the library compiles cleanly in release mode (no tests, no
   # sanitizers) - the configuration a downstream project would use.
   # ---------------------------------------------------------------------------
