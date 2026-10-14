@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 project(
   'embedded-log',
   'c',
@@ -55,6 +57,8 @@ embedded_log_dep = declare_dependency(
   include_directories: public_headers,
   link_with: embedded_log_lib,
 )
+
+meson.override_dependency('embedded-log', embedded_log_dep)
 
 # === pkg-config ===============================================================
 

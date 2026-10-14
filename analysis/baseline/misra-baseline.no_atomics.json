@@ -1,0 +1,47 @@
+{
+  "schema": "misch/baseline@2",
+  "fingerprints": {
+    "0b7bea8e3d50": {
+      "rule_id": "misra-c2012-8.7",
+      "file": "src/emlog.c",
+      "message": "misra violation (use --rule-texts=<file> to get proper output)",
+      "count": 8
+    },
+    "0d7234c4099e": {
+      "rule_id": "misra-c2012-15.5",
+      "file": "src/emlog.c",
+      "message": "misra violation (use --rule-texts=<file> to get proper output)",
+      "count": 9
+    },
+    "37751173c26c": {
+      "rule_id": "misra-c2012-2.5",
+      "file": "include/emlog_conf.h",
+      "message": "misra violation (use --rule-texts=<file> to get proper output)",
+      "count": 3
+    },
+    "7d2f30bab4f2": {
+      "rule_id": "misra-c2012-13.4",
+      "file": "src/emlog.c",
+      "message": "misra violation (use --rule-texts=<file> to get proper output)",
+      "count": 6
+    },
+    "874481f7569a": {
+      "rule_id": "misra-c2012-2.5",
+      "file": "include/emlog.h",
+      "message": "misra violation (use --rule-texts=<file> to get proper output)",
+      "count": 1
+    },
+    "c09504899040": {
+      "rule_id": "misra-c2012-21.6",
+      "file": "src/emlog.c",
+      "message": "misra violation (use --rule-texts=<file> to get proper output)",
+      "count": 2
+    },
+    "e8b34797fe77": {
+      "rule_id": "misra-c2012-17.1",
+      "file": "src/emlog.c",
+      "message": "misra violation (use --rule-texts=<file> to get proper output)",
+      "count": 3
+    }
+  }
+}

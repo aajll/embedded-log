@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 # One executable per concern. Each links the library and the in-tree
 # harness.
 foreach t : ['init', 'event', 'read', 'legacy']

@@ -12,9 +12,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `emlog_event_isr()` records an entry from interrupt context with a lock-free single-producer enqueue, deferring formatting to `emlog_drain()` in the background; `emlog_get_isr_dropped()` counts entries lost to a full pending ring. `EMLOG_ISR_ENTRIES` sizes the pending ring, and `EMLOG_USE_GNU_ATOMICS`, `EMLOG_USE_C11_ATOMICS` or `EMLOG_USE_NO_ATOMICS` override the atomic backend.
 - CI runs the interrupt-path tests under ThreadSanitizer and builds them once per atomic backend.
 - CI cross-builds the library with TI C2000 CGT 22.6.2 and 25.11.1 under the COFF and EABI object formats, with warnings as errors.
+- The build registers `embedded-log` with `meson.override_dependency`, so other subprojects in a consumer's build find it by name.
+- `scripts/format.sh` checks or applies formatting with a pinned clang-format release run through `uvx`, and CI runs the check.
+- CI runs a MISRA C:2023 analysis with `misch` for each atomic backend, against baselines in `analysis/baseline/` that record the existing findings.
 
 ### Changed
 
+- CI installs Meson, Ninja and gcovr with `uv` instead of `pip` and `apt`.
+- The Meson files and the test harness carry SPDX licence headers.
 - Tests are split into one executable per concern (initialisation, event recording, ring reads, deprecated names), and CI gates line and branch coverage at 100 %.
 
 ### Deprecated
