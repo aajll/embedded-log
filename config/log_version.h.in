@@ -3,7 +3,7 @@
 #ifndef LOG_VERSION_H
 #define LOG_VERSION_H
 
-#define LOG_VERSION       "@VERSION@"
+#define LOG_VERSION       @VERSION@
 #define LOG_VERSION_MAJOR @MAJOR@
 #define LOG_VERSION_MINOR @MINOR@
 #define LOG_VERSION_PATCH @PATCH@

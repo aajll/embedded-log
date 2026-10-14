@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- `log_version.h` now defines `LOG_VERSION` as a single string literal and `LOG_VERSION_MAJOR`, `_MINOR` and `_PATCH` as integers, so the macros compile when used.
+
 ## [1.0.0] - 2026-06-12
 
 ### Added
