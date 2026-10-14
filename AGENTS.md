@@ -20,18 +20,18 @@ meson compile -C builddir
 ```bash
 meson test -C builddir --print-errorlogs
 ```
-This runs **all** test executables defined in `tests/meson.build` (currently `test_log`).
+This runs **all** test executables defined in `tests/meson.build`: one per concern (`test_init`, `test_event`, `test_read`, `test_legacy`), plus `test_legacy_conf` and, where `<syslog.h>` exists, `test_syslog`.
 
 ## 3. Running a single test executable
 ```bash
 # Run the test binary directly (fastest)
-./builddir/tests/test_log
+./builddir/tests/test_event
 ```
 or via Meson (useful for Meson’s test‑filtering features)
 ```bash
-meson test -C builddir embedded_log_tests
+meson test -C builddir event
 ```
-Both commands execute the in‑tree test runner contained in `test_log.c`, which runs every `run_test` entry registered in `main()`.
+Both commands execute the in‑tree test runner contained in `test_event.c`, which runs every `run_test` entry registered in `main()`.
 
 ## 4. Linting / Formatting
 The project adheres to the `.clang-format` file located at the repository root.
@@ -111,14 +111,16 @@ These guidelines are enforced by the `.clang-format` file and by the project’s
 Inline trailing annotations (`/**< ... */`) on `enum`/`struct` members are allowed only when the resulting line fits the 80-column limit. If any member's annotation would overrun, move **all** of that aggregate's member docs into a single structured Doxygen block above the type, as an `@details` list of `- ::SYMBOL  description` entries. Never mix inline and block forms within one aggregate, and never leave a trailing comment that clang-format would wrap onto a second line. After editing, verify with a `clang-format --style=file` no-reformat diff and an 80-column scan.
 
 ## 8. Testing Conventions (in‑tree harness)
-- Test files live in `tests/`.  Each test file includes `test_harness.h` *before* the library header.
+- Test files live in `tests/`, one file and executable per concern.  Each test file includes `test_harness.h` *before* the library header.
+- `test_legacy.c` uses only the deprecated `log.h` names; every other test uses `emlog.h`.
+- CI gates line and branch coverage at 100 %.  Every new branch needs a test that fails when the branch is broken.
 - Test cases are defined with `TEST_CASE(test_<feature>)` and registered in `main()` with `run_test(test_<feature>, "test_<feature>");`.
 - Use the `TEST_ASSERT(expr)` macro for validation; a failed assertion prints the file, line, and expression, then exits non‑zero.
 - Tests must compile as strict ISO C11 — no GNU extensions (nested functions, `##__VA_ARGS__`, etc.).  CI builds them with both GCC and clang.
 
 ## 9. Meson Build Guidelines
 - The top‑level `meson.build` defines the static library `log` and declares a dependency `embedded_log_dep`.
-- Unit tests are enabled with the option `build_tests` (default `false`).  The `tests/meson.build` file creates an executable `test_log` from `test_log.c` and `test_harness.c`, linked against `embedded_log_dep`.
+- Unit tests are enabled with the option `build_tests` (default `false`).  The `tests/meson.build` file builds one executable per concern from `test_<concern>.c` and `test_harness.c`, linked against `embedded_log_dep`.
 - When adding new source files, update the `sources:` array in the `static_library` declaration.
 - When adding new include directories, modify the `include_directories()` call.
 

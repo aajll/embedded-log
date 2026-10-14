@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `emlog.h`, `emlog_conf.h` and a generated `emlog_version.h` provide the API under the `emlog_` and `EMLOG_` prefixes (`struct emlog_ctx`, `emlog_event()`, `EMLOG_INFO`, `EMLOG_ONCE`, `EMLOG_MSG_LEN`), so it can be included alongside `<syslog.h>`.
 - CI cross-builds the library with TI C2000 CGT 22.6.2 and 25.11.1 under the COFF and EABI object formats, with warnings as errors.
 
+### Changed
+
+- Tests are split into one executable per concern (initialisation, event recording, ring reads, deprecated names), and CI gates line and branch coverage at 100 %.
+
 ### Deprecated
 
 - `log.h`, `log_conf.h` and `log_version.h` and the unprefixed names they define. They forward to the `emlog` API, so existing code compiles unchanged, and will be removed in the next major release.
