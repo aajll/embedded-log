@@ -41,7 +41,7 @@ install_headers(
 
 # === Application core library =================================================
 
-library_sources = ['src/emlog.c']
+library_sources = files('src/emlog.c')
 
 embedded_log_lib = static_library(
   'log',

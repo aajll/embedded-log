@@ -10,6 +10,7 @@ A lightweight, MISRA C:2023 aware RAM log buffer for embedded systems without tr
 - **Log levels** — `EMLOG_INFO`, `EMLOG_WARN`, `EMLOG_FAULT`.
 - **`printf`-style API** — `emlog_event(ctx, level, fmt, ...)`.
 - **`EMLOG_ONCE`** — record a message at most once per code location per reset, preventing log spam in state machines and tight loops.
+- **Interrupt-safe deferred path** — `emlog_event_isr()` records a format and two `uint32_t` arguments lock-free from an interrupt; `emlog_drain()` formats them later in the background.
 - **Prefixed names** — every identifier starts with `emlog_` or `EMLOG_`, so the header can be included alongside `<syslog.h>`.
 - **Defensive** — safe against NULL pointers and misuse.
 - **MISRA C:2023 aware, Linux kernel style** — Doxygen-annotated, suitable for resource-constrained microcontrollers.
@@ -88,6 +89,9 @@ The buffer geometry is set by macros in `emlog_conf.h` (included automatically b
 | --------------- | --------------------------------------------------------------- | ------- |
 | `EMLOG_ENTRIES` | Number of entries retained in the ring buffer.                  | `64U`   |
 | `EMLOG_MSG_LEN` | Maximum formatted message length, including the NUL terminator. | `64U`   |
+| `EMLOG_ISR_ENTRIES` | Entries `emlog_event_isr()` can hold until the next `emlog_drain()`, from 1 to 254. | `8U` |
+
+The interrupt path picks an atomic backend automatically: GCC/Clang `__atomic` builtins, then C11 `<stdatomic.h>`, then `volatile`. Define one of `EMLOG_USE_GNU_ATOMICS`, `EMLOG_USE_C11_ATOMICS` or `EMLOG_USE_NO_ATOMICS` to choose it explicitly, identically for the library and its callers. The `volatile` backend is correct on a single core where the interrupt pre-empts the draining context; on a multi-core target without atomics, define `EMLOG_FENCE_ACQUIRE()` and `EMLOG_FENCE_RELEASE()` as the hardware barriers.
 
 ## Migrating from `log.h`
 
@@ -120,14 +124,14 @@ Tests are disabled by default; enable them with `-Dbuild_tests=true` at setup ti
 
 ## Platform support
 
-The library is portable C11 and needs only `<stdint.h>`, `<stdarg.h>`, `<stdio.h>` and `<string.h>`.
+The library is portable C11 and needs only `<stdbool.h>`, `<stdint.h>`, `<stdarg.h>`, `<stdio.h>` and `<string.h>`, plus `<stdatomic.h>` when the C11 backend is selected.
 
 | Toolchain                       | Target                | Status                   |
 | ------------------------------- | --------------------- | ------------------------ |
 | GCC, Clang                      | x86_64 Linux          | Host tests (CI)          |
 | TI C2000 CGT 22.6 and 25.11 LTS | 16-bit-MAU DSP family | Library cross-build (CI) |
 
-CI cross-compiles the library with warnings as errors under both the COFF and EABI object formats. The `EMLOG_ONCE` guard is `uint_least8_t`, so the macro also compiles where `CHAR_BIT == 16`.
+CI cross-compiles the library with warnings as errors under both the COFF and EABI object formats. That toolchain has no C11 atomics, so it uses the `volatile` backend. The `EMLOG_ONCE` guard is `uint_least8_t`, so the macro also compiles where `CHAR_BIT == 16`.
 
 ## API Reference
 
@@ -139,6 +143,35 @@ void emlog_event(struct emlog_ctx *ctx, enum emlog_level level, const char *fmt,
 ```
 
 `emlog_init` initialises a caller-owned context with a user-supplied monotonic timestamp function. `emlog_event` records a `printf`-style formatted entry at the given level (`EMLOG_INFO`, `EMLOG_WARN`, or `EMLOG_FAULT`); the message is truncated to `EMLOG_MSG_LEN - 1` characters and is always NUL-terminated.
+
+### Logging from an interrupt
+
+```c
+bool emlog_event_isr(struct emlog_ctx *ctx, enum emlog_level level, const char *fmt, uint32_t arg0, uint32_t arg1);
+uint16_t emlog_drain(struct emlog_ctx *ctx);
+uint_least8_t emlog_get_isr_dropped(const struct emlog_ctx *ctx);
+```
+
+`emlog_event_isr` captures the timestamp, level, format pointer and both arguments into a pending ring without formatting, locking or blocking, and returns `false` if the ring is full or an argument is invalid. `emlog_drain` formats the pending entries into the log in posting order, keeping the timestamps captured at posting, and returns how many it moved. `emlog_get_isr_dropped` counts entries rejected because the pending ring was full, saturating at `UINT_LEAST8_MAX`; `emlog_init` resets it.
+
+```c
+void adc_isr(void)
+{
+        (void)emlog_event_isr(&log_ctx, EMLOG_FAULT, "adc %" PRIu32 " ch %" PRIu32, sample, channel);
+}
+
+void background_loop(void)
+{
+        (void)emlog_drain(&log_ctx);
+}
+```
+
+The context rules are:
+
+- `emlog_event`, `emlog_drain`, `EMLOG_ONCE` and the inspection functions run in one execution context, never concurrently with each other.
+- `emlog_event_isr` runs from one producer context at a time and may pre-empt that context at any point. Interrupts of different priorities that both log must not pre-empt each other inside the call.
+- The timestamp function must be safe to call from the producer context.
+- `fmt` must have static storage duration, such as a string literal, because it is read when the entry is drained. Its conversions must consume `uint32_t` arguments (`PRIu32`, `PRIx32`); unused arguments are ignored.
 
 ### One-Shot Logging
 
@@ -172,9 +205,9 @@ struct emlog_entry {
 
 | Topic                | Note |
 | -------------------- | ---- |
-| **Memory**           | All storage lives in the caller-owned `struct emlog_ctx`. Verify `EMLOG_ENTRIES` × `EMLOG_MSG_LEN` fits your RAM budget. |
+| **Memory**           | All storage lives in the caller-owned `struct emlog_ctx`. Verify `EMLOG_ENTRIES` × `EMLOG_MSG_LEN`, plus `EMLOG_ISR_ENTRIES + 1` pending entries, fits your RAM budget. |
 | **Timestamp source** | `emlog_init` requires a monotonic timestamp function; the unit is user-defined. |
-| **Thread safety**    | Not internally synchronised. Protect a shared context with an external mutex or confine it to a single execution context. |
+| **Thread safety**    | Not internally synchronised, except that one producer may call `emlog_event_isr` concurrently with the context that owns the log. Protect other sharing with an external mutex. |
 | **NULL safety**      | Public functions are defensive against NULL pointers and return without effect rather than faulting. |
 | **Version header**   | `emlog_version.h` is generated at configure time and defines `EMLOG_VERSION` and its components. |
-| **MISRA C:2023**     | Aware, not formally compliant. Accepted deviations: Rule 17.1 (`stdarg.h`) and Rule 21.6 (`stdio.h`), required by the `printf`-style `emlog_event` API. `vsnprintf` is bounded and output is always NUL-terminated. |
+| **MISRA C:2023**     | Aware, not formally compliant. Accepted deviations: Rule 17.1 (`stdarg.h`) and Rule 21.6 (`stdio.h`), required by the `printf`-style `emlog_event` API and the deferred formatting in `emlog_drain`. `vsnprintf` and `snprintf` are bounded and output is always NUL-terminated. |

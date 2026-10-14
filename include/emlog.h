@@ -10,6 +10,7 @@
 #ifndef EMLOG_H
 #define EMLOG_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "emlog_conf.h"
@@ -22,6 +23,20 @@
 
 #if (EMLOG_MSG_LEN < 1u)
 #error "EMLOG_MSG_LEN must be at least 1 (the NUL terminator)"
+#endif
+
+/* The pending-ring indices are uint_least8_t and the ring holds one spare
+ * slot. */
+#if (EMLOG_ISR_ENTRIES < 1u) || (EMLOG_ISR_ENTRIES > 254u)
+#error "EMLOG_ISR_ENTRIES must be in the range [1, 254]"
+#endif
+
+#if defined(EMLOG_USE_C11_ATOMICS)
+#define EMLOG__ATOMIC _Atomic
+#elif defined(EMLOG_USE_GNU_ATOMICS)
+#define EMLOG__ATOMIC
+#else
+#define EMLOG__ATOMIC volatile
 #endif
 
 /**
@@ -43,6 +58,8 @@
  *   - No dynamic memory, no heap, no OS dependency
  *   - Every identifier carries the emlog_ or EMLOG_ prefix, so the header
  *     can be included alongside <syslog.h>
+ *   - Interrupt-safe deferred path: emlog_event_isr() records the format
+ *     and two arguments lock-free, and emlog_drain() formats them later
  *
  *   **Example Usage:**
  *   @code
@@ -115,13 +132,37 @@ struct emlog_entry {
 };
 
 /**
+ * @brief Entry recorded by emlog_event_isr() and formatted by emlog_drain().
+ */
+struct emlog_pending {
+        const char *fmt;
+        uint32_t timestamp;
+        uint32_t arg[2];
+        uint16_t level;
+};
+
+/**
  * @brief Log context, holding buffer and state.
+ *
+ * @details
+ * - ::buffer, ::head, ::count  the formatted ring, owned by the context
+ *   that calls emlog_event() and emlog_drain().
+ * - ::isr_ring, ::isr_head     pending entries and the next free slot,
+ *   written by emlog_event_isr().
+ * - ::isr_tail                 the oldest pending slot, written by
+ *   emlog_drain().
+ * - ::isr_dropped              entries emlog_event_isr() rejected because
+ *   the pending ring was full, saturating at UINT_LEAST8_MAX.
  */
 struct emlog_ctx {
         struct emlog_entry buffer[EMLOG_ENTRIES];
         uint16_t head;
         uint16_t count;
         uint32_t (*timestamp_fn)(void);
+        volatile struct emlog_pending isr_ring[EMLOG_ISR_ENTRIES + 1u];
+        EMLOG__ATOMIC uint_least8_t isr_head;
+        EMLOG__ATOMIC uint_least8_t isr_tail;
+        EMLOG__ATOMIC uint_least8_t isr_dropped;
 };
 
 /**
@@ -182,6 +223,64 @@ const struct emlog_entry *emlog_get_entry(const struct emlog_ctx *ctx,
  */
 const struct emlog_entry *emlog_get_buffer(const struct emlog_ctx *ctx,
                                            uint16_t *count);
+
+/**
+ * @brief Record an entry from interrupt context, deferring the formatting.
+ *
+ * Captures the timestamp, level, format pointer and both arguments into
+ * the pending ring without locking, formatting or blocking. emlog_drain()
+ * formats them into the log later.
+ *
+ * @param ctx       Pointer to log context.
+ * @param level     Log level.
+ * @param fmt       printf-style format string with static storage
+ *                  duration, such as a string literal; it is read when the
+ *                  entry is drained. Its conversions consume up to two
+ *                  uint32_t arguments (PRIu32, PRIx32); unused arguments
+ *                  are ignored.
+ * @param arg0      First format argument.
+ * @param arg1      Second format argument.
+ *
+ * @return          true if the entry was queued; false if an argument is
+ *                  NULL, the context has no timestamp function, or the
+ *                  pending ring is full (the entry is then counted by
+ *                  emlog_get_isr_dropped()).
+ *
+ * @note            Single producer: one execution context at a time may
+ *                  call this function, concurrently with the context that
+ *                  calls emlog_drain(). Interrupts of different priorities
+ *                  that both log must not pre-empt each other inside the
+ *                  call. The timestamp function must be safe to call from
+ *                  that context.
+ */
+bool emlog_event_isr(struct emlog_ctx *ctx, enum emlog_level level,
+                     const char *fmt, uint32_t arg0, uint32_t arg1);
+
+/**
+ * @brief Format pending emlog_event_isr() entries into the log.
+ *
+ * Entries keep the timestamp captured when they were posted and are
+ * appended in posting order after any entry already in the log.
+ *
+ * @param ctx       Pointer to log context.
+ *
+ * @return          Number of entries moved into the log.
+ *
+ * @note            Call from the context that owns emlog_event(), never
+ *                  concurrently with it.
+ */
+uint16_t emlog_drain(struct emlog_ctx *ctx);
+
+/**
+ * @brief Number of emlog_event_isr() entries dropped because the pending
+ *        ring was full.
+ *
+ * @param ctx       Pointer to log context.
+ *
+ * @return          Entries dropped since emlog_init(), saturating at
+ *                  UINT_LEAST8_MAX; 0 for a NULL context.
+ */
+uint_least8_t emlog_get_isr_dropped(const struct emlog_ctx *ctx);
 
 /**
  * @def EMLOG_ONCE
