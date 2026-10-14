@@ -83,7 +83,7 @@ scripts/format.sh --fix    # rewrite in place
 
 ### Documentation layout
 
-- `README.md` is a short landing page (about 85 lines). Put detail in `docs/`, never in the README; link to the owning file instead.
+- `README.md` is a short landing page (under 100 lines). Put detail in `docs/`, never in the README; link to the owning file instead.
 - `docs/integration.md` owns requirements, install methods, configuration consistency, migration from `log.h`, building, sanitiser host limits, and cross builds.
 - `docs/api.md` owns the API reference, the configuration macros and recipes. Change it together with the headers; keep signatures in fenced `c` blocks and describe them in prose, not function tables. Check every value an example states against a build.
 - `docs/design.md` is the single authoritative design record: the ring, the interrupt path and its ordering, backends and their limits, context rules, failure behaviour, MISRA position, and verification.

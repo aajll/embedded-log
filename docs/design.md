@@ -59,7 +59,7 @@ The indices are `_Atomic uint_least8_t`, accessed with `atomic_load_explicit` an
 
 The indices and the slots are `volatile`, and the macros are plain reads and writes. `volatile` forces the compiler to emit every access to them in program order, and a single core always observes its own accesses in program order. When the producer is an interrupt on the same core as the consumer, that is enough: the interrupt sees either all of the consumer's writes up to a point or none of them, and vice versa.
 
-It is not enough when the two contexts run on different cores, because the hardware may then make the writes visible in another order. `EMLOG_FENCE_ACQUIRE()` runs after each index load and `EMLOG_FENCE_RELEASE()` before each index store; both do nothing by default, and a multi-core target without C11 atomics defines them as its barrier instructions. The backend also relies on each index being read and written in one access, which holds for `uint_least8_t` on any target, since it is a single `char`.
+It is not enough when the two contexts run on different cores, because the hardware may then make the writes visible in another order. `EMLOG_FENCE_ACQUIRE()` runs after each acquire load of an index and `EMLOG_FENCE_RELEASE()` before each release store; both do nothing by default, and a multi-core target without C11 atomics defines them as its barrier instructions. The backend also relies on each index being read and written in one access, which holds for `uint_least8_t` on any target, since it is a single `char`.
 
 ## Context rules
 
