@@ -37,9 +37,19 @@ TEST_CASE(test_emlog_with_syslog)
         TEST_ASSERT(strcmp(e0->msg, "syslog LOG_INFO=6") == 0);
 }
 
+/* The deprecated version header still exposes the macros from emlog.h. */
+TEST_CASE(test_version_macros)
+{
+        TEST_ASSERT(EMLOG_VERSION_NUMBER
+                    == ((EMLOG_VERSION_MAJOR * 10000L)
+                        + (EMLOG_VERSION_MINOR * 100L) + EMLOG_VERSION_PATCH));
+        TEST_ASSERT(EMLOG_VERSION[0] != '\0');
+}
+
 int
 main(void)
 {
         run_test(test_emlog_with_syslog, "test_emlog_with_syslog");
+        run_test(test_version_macros, "test_version_macros");
         return EXIT_SUCCESS;
 }

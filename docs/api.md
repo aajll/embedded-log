@@ -183,3 +183,25 @@ log_dump(void)
 ```
 
 Without an output, read the context with a debugger. Its `buffer` member holds the entries, `count` how many are valid, and `head` the slot the next entry will use, so the newest entry is the one before `head`.
+
+## Version
+
+`emlog.h` defines the release it belongs to, so a copied-in header still identifies itself:
+
+<!-- snippet: skip -->
+```c
+#define EMLOG_VERSION_MAJOR 1
+#define EMLOG_VERSION_MINOR 0
+#define EMLOG_VERSION_PATCH 0
+#define EMLOG_VERSION "1.0.0"
+```
+
+`EMLOG_VERSION_NUMBER` is `MAJOR * 10000 + MINOR * 100 + PATCH` as a `long`, so it holds any version where `int` is 16 bits. Compare it in the preprocessor to require a minimum release:
+
+```c
+#if EMLOG_VERSION_NUMBER < 10000L
+#error "emlog 1.0.0 or later is required"
+#endif
+```
+
+`emlog_version.h` is a deprecated header that includes `emlog.h`, kept so existing includes compile until the next major release.

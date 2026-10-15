@@ -4,25 +4,32 @@ project(
   'embedded-log',
   'c',
   version: '1.0.0',
+  meson_version: '>=0.57.0',
   default_options: ['warning_level=3', 'c_std=c11'],
   license: 'MIT',
 )
 
-# === Version header ===========================================================
+# === Version ==================================================================
+# include/emlog.h defines the version macros, so a copy-in build has them.
+# Configuration fails when they differ from the project version.
 
-ver = meson.project_version().split('.')
-
-major = ver[0].to_int()
-minor = ver[1].to_int()
-patch = ver[2].to_int()
-
-conf = configuration_data()
-conf.set_quoted('VERSION', meson.project_version())
-conf.set('MAJOR', major)
-conf.set('MINOR', minor)
-conf.set('PATCH', patch)
-
-subdir('include')
+fs = import('fs')
+version_parts = meson.project_version().split('.')
+version_macros = {
+  'EMLOG_VERSION_MAJOR': version_parts[0],
+  'EMLOG_VERSION_MINOR': version_parts[1],
+  'EMLOG_VERSION_PATCH': version_parts[2],
+  'EMLOG_VERSION': '"' + meson.project_version() + '"',
+}
+header_lines = []
+foreach line : fs.read('include' / 'emlog.h').split('\n')
+  header_lines += ' '.join(line.split())
+endforeach
+foreach name, value : version_macros
+  if '#define @0@ @1@'.format(name, value) not in header_lines
+    error('include/emlog.h must define @0@ as @1@'.format(name, value))
+  endif
+endforeach
 
 # === Include directories ======================================================
 
@@ -34,6 +41,7 @@ install_headers(
   [
     'include/emlog.h',
     'include/emlog_conf.h',
+    'include/emlog_version.h',
     'include/log.h',
     'include/log_conf.h',
     'include/log_version.h',
