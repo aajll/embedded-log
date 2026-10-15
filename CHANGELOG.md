@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- `emlog.h`, `emlog_conf.h` and a generated `emlog_version.h` provide the API under the `emlog_` and `EMLOG_` prefixes (`struct emlog_ctx`, `emlog_event()`, `EMLOG_INFO`, `EMLOG_ONCE`, `EMLOG_MSG_LEN`), so it can be included alongside `<syslog.h>`.
+- `emlog.h` and `emlog_conf.h` provide the API under the `emlog_` and `EMLOG_` prefixes (`struct emlog_ctx`, `emlog_event()`, `EMLOG_INFO`, `EMLOG_ONCE`, `EMLOG_MSG_LEN`), so it can be included alongside `<syslog.h>`.
 - `emlog_event_isr()` records an entry from interrupt context with a lock-free single-producer enqueue, deferring formatting to `emlog_drain()` in the background; `emlog_get_isr_dropped()` counts entries lost to a full pending ring. `EMLOG_ISR_ENTRIES` sizes the pending ring, and `EMLOG_USE_GNU_ATOMICS`, `EMLOG_USE_C11_ATOMICS` or `EMLOG_USE_NO_ATOMICS` override the atomic backend.
 - CI runs the interrupt-path tests under ThreadSanitizer and builds them once per atomic backend.
 - CI cross-builds the library with TI C2000 CGT 22.6.2 and 25.11.1 under the COFF and EABI object formats, with warnings as errors.
@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- `emlog.h` defines `EMLOG_VERSION_MAJOR`, `_MINOR`, `_PATCH`, `EMLOG_VERSION` and a new `EMLOG_VERSION_NUMBER` (`long`, `MAJOR * 10000 + MINOR * 100 + PATCH`), so a copied-in header carries its version. `emlog_version.h` is no longer generated; it is installed as a deprecated header that includes `emlog.h`. Meson fails to configure when the header and `project(version:)` disagree, and the build needs Meson 0.57 or later.
+- `emlog.h` defines `EMLOG_VERSION_MAJOR`, `_MINOR`, `_PATCH`, `EMLOG_VERSION` and a new `EMLOG_VERSION_NUMBER` (`long`, `MAJOR * 10000 + MINOR * 100 + PATCH`), so a copied-in header carries its version. Meson fails to configure when the header and `project(version:)` disagree, and the build needs Meson 0.57 or later.
 - The README is a landing page, with the installation and configuration guide in `docs/integration.md`, the API and recipes in `docs/api.md`, and the ring, interrupt path, backends and verification in `docs/design.md`. `CONTRIBUTING.md` and `AGENTS.md` describe the current tooling and the interrupt path's concurrency rules.
 - CI installs Meson, Ninja and gcovr with `uv` instead of `pip` and `apt`.
 - The Meson files and the test harness carry SPDX licence headers.
