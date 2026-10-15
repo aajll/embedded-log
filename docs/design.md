@@ -86,7 +86,7 @@ Timestamps are stored as the function returns them. Their unit and their wrap at
 
 ## MISRA C:2023
 
-The library is analysed with [`misch`](https://pypi.org/project/misch/), a cppcheck-based MISRA C:2023 checker, over `include/` and `src/`. Each backend compiles different code, so CI analyses each one, and each has a baseline of accepted findings in `analysis/baseline/`. CI fails on any finding outside the matching baseline.
+The library is analysed with [`misch`](https://pypi.org/project/misch/), a cppcheck-based MISRA C:2023 checker, over `include/` and `src/`. Each backend compiles different code, so CI analyses each one, and each has a baseline of accepted findings in `analysis/baseline/`. CI fails on any finding outside the matching baseline. The version macros in `emlog.h` carry an inline deviation of Rule 2.5 (unused macro), because they exist for consumers and the library does not use them.
 
 | Backend | Findings | Rules |
 | --- | --- | --- |

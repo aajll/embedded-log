@@ -25,7 +25,7 @@ Keep both headers in the same directory, because `emlog.h` includes `emlog_conf.
 #include "emlog.h"
 ```
 
-Code that still uses the deprecated names also needs `include/log.h` and `include/log_conf.h`; see [migrating from `log.h`](#migrating-from-logh). `emlog_version.h` and `log_version.h` work only in Meson builds, which generate `emlog_version.h`.
+Code that still uses the deprecated names also needs `include/log.h` and `include/log_conf.h`; see [migrating from `log.h`](#migrating-from-logh). `emlog.h` defines the version macros described in [api.md](api.md#version), and `emlog_version.h` and `log_version.h` are deprecated headers that include it.
 
 ## Meson subproject
 
@@ -55,10 +55,9 @@ The install contains the static archive `liblog.a`, the headers in an `embedded-
 <!-- snippet: skip -->
 ```c
 #include <embedded-log/emlog.h>
-#include <embedded-log/emlog_version.h>
 ```
 
-`emlog_version.h` defines `EMLOG_VERSION` as the version string, and `EMLOG_VERSION_MAJOR`, `EMLOG_VERSION_MINOR` and `EMLOG_VERSION_PATCH` as integers.
+`emlog_version.h` is installed beside it as a deprecated header that includes `emlog.h`.
 
 ## Configuration
 

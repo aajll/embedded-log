@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `emlog.h` defines `EMLOG_VERSION_MAJOR`, `_MINOR`, `_PATCH`, `EMLOG_VERSION` and a new `EMLOG_VERSION_NUMBER` (`long`, `MAJOR * 10000 + MINOR * 100 + PATCH`), so a copied-in header carries its version. `emlog_version.h` is no longer generated; it is installed as a deprecated header that includes `emlog.h`. Meson fails to configure when the header and `project(version:)` disagree, and the build needs Meson 0.57 or later.
 - The README is a landing page, with the installation and configuration guide in `docs/integration.md`, the API and recipes in `docs/api.md`, and the ring, interrupt path, backends and verification in `docs/design.md`. `CONTRIBUTING.md` and `AGENTS.md` describe the current tooling and the interrupt path's concurrency rules.
 - CI installs Meson, Ninja and gcovr with `uv` instead of `pip` and `apt`.
 - The Meson files and the test harness carry SPDX licence headers.
