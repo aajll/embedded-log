@@ -49,7 +49,7 @@ scripts/format.sh --fix    # rewrite in place
 
 ### 1.2 Notes
 
-- `include/emlog.h` defines the version macros, and `meson setup` fails when they differ from `project(version:)`, so a release updates both. `include/emlog_version.h` is a deprecated header that includes `emlog.h`.
+- `include/emlog.h` defines the version macros, and `meson setup` fails when they differ from `project(version:)`, so a release updates both.
 - The build produces only a static library, installed as `liblog.a` with headers under `embedded-log/` and `embedded-log.pc`. The only Meson option is `build_tests`.
 - `EMLOG_ENTRIES`, `EMLOG_MSG_LEN`, `EMLOG_ISR_ENTRIES` and the backend macros must be identical for the library and every caller; nothing detects a mismatch. `emlog.h` includes `emlog_conf.h` with quotes, so configuration is by `-D` only.
 - `log.h`, `log_conf.h` and `log_version.h` are deprecated forwarders. Do not add new names to them.

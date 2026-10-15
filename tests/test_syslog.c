@@ -13,7 +13,6 @@
 #include "test_harness.h"
 
 #include "emlog.h"
-#include "emlog_version.h"
 
 _Static_assert(EMLOG_VERSION_MAJOR >= 1, "version header is usable");
 
@@ -37,7 +36,7 @@ TEST_CASE(test_emlog_with_syslog)
         TEST_ASSERT(strcmp(e0->msg, "syslog LOG_INFO=6") == 0);
 }
 
-/* The deprecated version header still exposes the macros from emlog.h. */
+/* The version number agrees with its parts. */
 TEST_CASE(test_version_macros)
 {
         TEST_ASSERT(EMLOG_VERSION_NUMBER

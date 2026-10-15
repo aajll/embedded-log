@@ -41,7 +41,6 @@ install_headers(
   [
     'include/emlog.h',
     'include/emlog_conf.h',
-    'include/emlog_version.h',
     'include/log.h',
     'include/log_conf.h',
     'include/log_version.h',

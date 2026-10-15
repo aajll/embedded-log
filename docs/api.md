@@ -203,5 +203,3 @@ Without an output, read the context with a debugger. Its `buffer` member holds t
 #error "emlog 1.0.0 or later is required"
 #endif
 ```
-
-`emlog_version.h` is a deprecated header that includes `emlog.h`, kept so existing includes compile until the next major release.
