@@ -191,15 +191,15 @@ Without an output, read the context with a debugger. Its `buffer` member holds t
 <!-- snippet: skip -->
 ```c
 #define EMLOG_VERSION_MAJOR 1
-#define EMLOG_VERSION_MINOR 0
+#define EMLOG_VERSION_MINOR 1
 #define EMLOG_VERSION_PATCH 0
-#define EMLOG_VERSION "1.0.0"
+#define EMLOG_VERSION "1.1.0"
 ```
 
 `EMLOG_VERSION_NUMBER` is `MAJOR * 10000 + MINOR * 100 + PATCH` as a `long`, so it holds any version where `int` is 16 bits. Compare it in the preprocessor to require a minimum release:
 
 ```c
-#if EMLOG_VERSION_NUMBER < 10000L
-#error "emlog 1.0.0 or later is required"
+#if EMLOG_VERSION_NUMBER < 10100L
+#error "emlog 1.1.0 or later is required"
 #endif
 ```

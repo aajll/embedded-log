@@ -29,9 +29,9 @@
 /* cppcheck-suppress-begin misra-c2012-2.5 ; @deviation Public version macros
  * for consumer diagnostics and #if checks; the library does not use them. */
 #define EMLOG_VERSION_MAJOR 1
-#define EMLOG_VERSION_MINOR 0
+#define EMLOG_VERSION_MINOR 1
 #define EMLOG_VERSION_PATCH 0
-#define EMLOG_VERSION       "1.0.0"
+#define EMLOG_VERSION       "1.1.0"
 #define EMLOG_VERSION_NUMBER                                                   \
         ((EMLOG_VERSION_MAJOR * 10000L) + (EMLOG_VERSION_MINOR * 100L)         \
          + EMLOG_VERSION_PATCH)

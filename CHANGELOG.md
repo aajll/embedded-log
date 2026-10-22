@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-22
+
 ### Added
 
 - `emlog.h` and `emlog_conf.h` provide the API under the `emlog_` and `EMLOG_` prefixes (`struct emlog_ctx`, `emlog_event()`, `EMLOG_INFO`, `EMLOG_ONCE`, `EMLOG_MSG_LEN`), so it can be included alongside `<syslog.h>`.
@@ -32,7 +34,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - The `EMLOG_ONCE` (and `LOG_ONCE`) guard is `uint_least8_t`, so the macro compiles where `CHAR_BIT == 16` and `uint8_t` does not exist.
-
 - `log_version.h` now defines `LOG_VERSION` as a single string literal and `LOG_VERSION_MAJOR`, `_MINOR` and `_PATCH` as integers, so the macros compile when used.
 
 ## [1.0.0] - 2026-06-12
